@@ -1,18 +1,26 @@
 {
   "name": "MMM-TMB",
   "version": "1.1.1",
-  "description": "Get bus schedules from Barcelona's TMB",
-  "main": "MMM-TMB.js",
-  "author": "@jaumebosch",
+  "description": "MagicMirror² module - Get bus schedules from Barcelona's TMB",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaumebosch/MMM-TMB.git"
+  },
+  "keywords": [
+    "MagicMirror",
+    "TMB",
+    "magic mirror",
+    "smart mirror",
+    "public transport",
+    "local transit"
+  ],
+  "author": "jaumebosch",
   "license": "MIT",
-  "devDependencies": {
-    "grunt": "latest",
-    "grunt-eslint": "latest",
-    "grunt-jsonlint": "latest",
-    "grunt-markdownlint": "^1.0.13",
-    "grunt-stylelint": "latest",
-    "grunt-yamllint": "latest",
-    "stylelint-config-standard": "latest",
-    "time-grunt": "latest"
+  "bugs": {
+    "url": "https://github.com/jaumebosch/MMM-TMB/issues"
+  },
+  "homepage": "https://github.com/jaumebosch/MMM-TMB#readme",
+  "dependencies": {
+    "request": "^2.74.0"
   }
 }

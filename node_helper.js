@@ -13,78 +13,87 @@ var request = require('request');
 module.exports = NodeHelper.create({
 
     start: function() {
-        this.started = false;
-        this.config = null;
+        console.log("Starting node helper for: " + this.name);
     },
 
     getData: function() {
         var self = this;
+        var stop = new Array();
+        var lines = new Array();
 
-        var iBus = new Object();
+        global.stops = new Array();
+
+        this.config.busStopCodes.forEach( function (value, index, array){
+            stop = self.getStopInfo(value, lines);
+        });
+
+        setTimeout(function() { self.getData(); }, this.config.refreshInterval);
+    },
+
+
+    getStopInfo: function(busStopCode, lines) {
+        var self = this;
         var stopInfoUrl =  "https://api.tmb.cat/v1/transit" +
-            "/parades/" + self.config.busStopCode +
-            "?app_id=" + self.config.appId +
-            "&app_key=" + self.config.appKey;
+            "/parades/" + busStopCode +
+            "?app_id=" + this.config.appId +
+            "&app_key=" + this.config.appKey;
 
+        var stop = new Object();
         request({
             url: stopInfoUrl,
             method: 'GET',
         }, function (error, response, body) {
             if (!error && response.statusCode == 200) {
                 var stopInfo =  JSON.parse(body);
-                var data = stopInfo.features[0].properties;
-                iBus = {
-                            busStopCode:data['CODI_PARADA'],
-                            busStopName:data['NOM_PARADA'],
-                        };
-
-                var stopUrl =  "https://api.tmb.cat/v1/ibus";
-
-                if (self.config.busLine){
-                   stopUrl += "/lines/" + self.config.busLine;
-                } 
-                   
-                stopUrl +=  "/stops/" + self.config.busStopCode +
-                    "?app_id=" + self.config.appId +
-                    "&app_key=" + self.config.appKey;
-
-                request({
-                    url: stopUrl,
-                    method: 'GET',
-                }, function (error, response, body) {
-                    if (!error && response.statusCode == 200) {
-                        var stopTimes =  JSON.parse(body);
-                        var line = new Array();
-                        iBus.lines = {};
-                        var data = stopTimes.data.ibus;
-                        var index;
-                        for (index = 0; index < data.length; ++index) {
-                            line.push(
-                                {
-                                    lineCode:data[index]['line'],
-                                    tInS:data[index]['t-in-s'],
-                                    tInText:data[index]['text-ca'],
-                                    tInMin:data[index]['t-in-min'],
-                                }
-                            );
-                        }
-                        iBus.lines = line;
-                        self.sendSocketNotification("DATA", iBus);
-                    }
-                });
+                var stop = stopInfo.features[0].properties;
             }
-        });
 
-        setTimeout(function() { self.getData(); }, this.config.refreshInterval);
+
+            var stopUrl =  "https://api.tmb.cat/v1/ibus";
+
+            if (self.config.busLine){
+               stopUrl += "/lines/" + self.config.busLine;
+            } 
+               
+            stopUrl +=  "/stops/" + busStopCode +
+                "?app_id=" + self.config.appId +
+                "&app_key=" + self.config.appKey;
+
+            request({
+                url: stopUrl,
+                method: 'GET',
+            }, function (error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    var stopTimes =  JSON.parse(body);
+                    var times = stopTimes.data.ibus;
+                    var index;
+                    times.forEach(function(value, index, array){
+                       var line = 
+                            {
+                                busStopCode:stop['CODI_PARADA'],
+                                busStopName:stop['NOM_PARADA'],
+                                lineCode:value['line'],
+                                tInS:value['t-in-s'],
+                                tInText:value['text-ca'],
+                                tInMin:value['t-in-min'],
+                            }
+                        lines.push(line);
+
+
+                    });
+console.log(lines);
+                    self.sendSocketNotification("DATA", lines);
+                }
+            });
+        });
     },
 
+    
+
     socketNotificationReceived: function(notification, payload) {
-        var self = this;
-        if (notification === 'CONFIG' && self.started == false) {
-            self.config = payload;
-            self.sendSocketNotification("STARTED", true);
-            self.getData();
-            self.started = true;
+        if (notification === 'CONFIG') {
+            this.config = payload;
+            this.getData();
         }
     }
 });
